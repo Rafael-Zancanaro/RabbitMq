@@ -53,8 +53,9 @@ namespace RabbitMqClient.Api
                 _channel.BasicConsume("NameQueue", false, consumer);
                 _channel.BasicAck(1, false);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error To Connect RabbitMq", $"Host: {"localhost"}, Port: {5672}");
                 _channel.BasicNack(1, false, true);
             }
 

@@ -7,34 +7,64 @@ namespace RabbitMqClient.Api.Services
 {
     public class RabbitMqClientService : IRabbitMqClientService
     {
-        private readonly IConfiguration _configuration;
+        private readonly ILogger<RabbitMqClientService> _logger;
         private readonly IConnection _connection;
         private readonly IModel _channel;
 
-        public RabbitMqClientService(IConfiguration configuration)
+        public RabbitMqClientService(ILogger<RabbitMqClientService> logger)
         {
-            _configuration = configuration;
-            _connection = new ConnectionFactory()
+            _logger = logger;
+            try
             {
-                HostName = "HostName",
-                Port = 0000,
-                UserName = "UserName",
-                Password = "Password"
+                _connection = new ConnectionFactory()
+                {
+                    HostName = "HostName",
+                    Port = 0000,
+                    UserName = "UserName",
+                    Password = "Password"
+                }
+                .CreateConnection();
+
+                _channel = _connection.CreateModel();
+                ConfigureWay();
             }
-            .CreateConnection();
-            _channel = _connection.CreateModel();
-            _channel.ExchangeDeclare(exchange: "NameExchange", type: ExchangeType.Fanout, true, false);
+            catch (Exception)
+            {
+                _logger.LogError(600, "Error To Connect RabbitMq", $"Host: {"localhost"}, Port: {5672}");
+            }
         }
 
         public void PublishMessage(ModelDto model)
         {
-            string mensagem = JsonSerializer.Serialize(model);
-            var body = Encoding.UTF8.GetBytes(mensagem);
+            try
+            {
+                string mensagem = JsonSerializer.Serialize(model);
+                var body = Encoding.UTF8.GetBytes(mensagem);
 
-            _channel.BasicPublish(exchange: "NameExchange",
-                routingKey: "NameQueue",
-                basicProperties: null,
-                body: body);
+                IBasicProperties basicProperties;
+                //basicProperties.DeliveryMode = 2;
+
+                _channel.BasicPublish(exchange: "NameExchange",
+                    routingKey: "NameQueue",
+                    basicProperties: null,//basicProperties,
+                    body: body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(601, "Error To Connect RabbitMq", $"| exception generated: {ex.Message} |");
+                throw;
+            }
         }
+
+        #region Private Methods
+
+        private void ConfigureWay()
+        {
+            _channel.ExchangeDeclare(exchange: "NameExchange", type: ExchangeType.Fanout, durable: true, autoDelete: false);
+            _channel.QueueDeclare(queue: "NameQueue", durable: true, exclusive: false, autoDelete: false);
+            _channel.QueueBind(queue: "NameQueue", exchange: "NameExchange", routingKey: "NameQueue");
+        }
+
+        #endregion
     }
 }
