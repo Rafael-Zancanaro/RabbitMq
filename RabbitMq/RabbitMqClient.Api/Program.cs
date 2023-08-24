@@ -13,7 +13,8 @@ services.AddControllers();
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
-services.AddSingleton<IRabbitMqClientService, RabbitMqClientService>();
+services.AddScoped<IRabbitMqClientService, RabbitMqClientService>();
+services.AddScoped<IEventService, IEventService>();
 services.Configure<ConnectionRabbit>(builder.Configuration.GetSection("ConnectionRabbit"));
 services.AddMediatR(typeof(EventNotification));
 services.AddHostedService<RabbitMqSubscribeService>();
