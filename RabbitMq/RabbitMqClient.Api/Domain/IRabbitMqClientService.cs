@@ -1,7 +1,9 @@
-﻿namespace RabbitMqClient.Api.Domain
+﻿using RabbitMqClient.Api.Events.Notifications;
+
+namespace RabbitMqClient.Api.Domain
 {
     public interface IRabbitMqClientService
     {
-        void PublishMessage(ModelDto model);
+        void PublishMessage(EventNotification model, CancellationToken cancellationToken);
     }
 }

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMqClient.Api.Domain;
@@ -8,77 +8,72 @@ namespace RabbitMqClient.Api
 {
     public class RabbitMqSubscribeService : BackgroundService
     {
+        private readonly IEventService _eventService;
         private readonly ILogger<RabbitMqSubscribeService> _logger;
-        private readonly IConnection _connection;
-        private readonly IModel _channel;
-        private string _nomeDaFila;
+        private readonly ConnectionRabbit _config;
+        private IConnection _connection;
+        private IModel _channel;
 
-        public RabbitMqSubscribeService(ILogger<RabbitMqSubscribeService> logger)
+
+        public RabbitMqSubscribeService(IOptions<ConnectionRabbit> options, ILogger<RabbitMqSubscribeService> logger, IEventService eventService)
         {
             _logger = logger;
+            _config = options.Value;
+            _eventService = eventService;
+            IniciarRabbitMq();
+        }
 
-            try
+        public void IniciarRabbitMq()
+        {
+            var factory = new ConnectionFactory()
             {
-                _connection = new ConnectionFactory()
-                {
-                HostName = "HostName",
-                Port = 0000,
-                UserName = "UserName",
-                Password = "Password"
-                }
-             .CreateConnection();
+                HostName = _config.Host,
+                UserName = _config.UserName,
+                Password = _config.Password,
+                VirtualHost = _config.Environment,
+                Port = _config.Port
+            };
 
-                _channel = _connection.CreateModel();
-                ConfigureWay();
-            }
-            catch (Exception)
-            {
-                _logger.LogError(504, "Error To Connect RabbitMq", $"Host: {"localhost"}, Port: {5672}");
-            }
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
+            _channel.QueueDeclare(ConstantsRabbit.NameQueue, true, false, false, null);
+            _channel.QueueBind(ConstantsRabbit.NameQueue, ConstantsRabbit.NameExchange, ConstantsRabbit.NameQueue);
+            _channel.BasicQos(0, 5, false);
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            try
+            var message = string.Empty;
+            var consumer = new EventingBasicConsumer(_channel);
+            consumer.Received += async (model, args) =>
             {
-                var consumer = new EventingBasicConsumer(_channel);
-                consumer.Received += (ModuleHandle, ea) =>
+                try
                 {
-                    var body = ea.Body;
-                    var message = Encoding.UTF8.GetString(body.ToArray());
+                    var body = args.Body.ToArray();
+                    message = Encoding.UTF8.GetString(body);
 
-                    ProcessEvent(message);
-                };
+                    await _eventService.ProcessEventAsync(message);
 
-                _channel.BasicConsume("NameQueue", false, consumer);
-                _channel.BasicAck(1, false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error To Connect RabbitMq", $"Host: {"localhost"}, Port: {5672}");
-                _channel.BasicNack(1, false, true);
-            }
+                    _channel.BasicAck(args.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, ConstantsRabbit.ErrorRabbit, string.Format(RabbitResources.ErrorConsuming, ConstantsRabbit.NameQueue, message));
+                    _channel.BasicNack(args.DeliveryTag, false, !args.Redelivered);
+                }
+            };
+
+            _channel.BasicConsume(queue: ConstantsRabbit.NameQueue, autoAck: false, consumer: consumer);
 
             return Task.CompletedTask;
         }
 
-        private static void ProcessEvent(string message)
+        public override void Dispose()
         {
-            var model = JsonConvert.DeserializeObject<ModelDto>(message);
-
-            Console.WriteLine(model.Name);
-            Console.WriteLine(model.Idade);
+            _connection.Close();
+            _channel.Close();
+            base.Dispose();
+            GC.SuppressFinalize(this);
         }
-
-        #region Private Methods
-
-        private void ConfigureWay()
-        {
-            _channel.ExchangeDeclare(exchange: "NameExchange", type: ExchangeType.Fanout, true, false);
-            _nomeDaFila = _channel.QueueDeclare().QueueName;
-            _channel.QueueBind(queue: _nomeDaFila, exchange: "NameExchange", routingKey: "NameQueue");
-        }
-
-        #endregion
     }
 }

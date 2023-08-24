@@ -1,5 +1,7 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.Extensions.Options;
+using RabbitMQ.Client;
 using RabbitMqClient.Api.Domain;
+using RabbitMqClient.Api.Events.Notifications;
 using System.Text;
 using System.Text.Json;
 
@@ -8,20 +10,23 @@ namespace RabbitMqClient.Api.Services
     public class RabbitMqClientService : IRabbitMqClientService
     {
         private readonly ILogger<RabbitMqClientService> _logger;
+        private readonly ConnectionRabbit _configs;
         private readonly IConnection _connection;
         private readonly IModel _channel;
 
-        public RabbitMqClientService(ILogger<RabbitMqClientService> logger)
+        public RabbitMqClientService(ILogger<RabbitMqClientService> logger, IOptions<ConnectionRabbit> configs)
         {
             _logger = logger;
+            _configs = configs.Value;
             try
             {
                 _connection = new ConnectionFactory()
                 {
-                    HostName = "HostName",
-                    Port = 0000,
-                    UserName = "UserName",
-                    Password = "Password"
+                    HostName = _configs.Host,
+                    Port = _configs.Port,
+                    UserName = _configs.UserName,
+                    VirtualHost = _configs.Environment,
+                    Password = _configs.Password,
                 }
                 .CreateConnection();
 
@@ -30,28 +35,28 @@ namespace RabbitMqClient.Api.Services
             }
             catch (Exception)
             {
-                _logger.LogError(600, "Error To Connect RabbitMq", $"Host: {"localhost"}, Port: {5672}");
+                _logger.LogError(600, ConstantsRabbit.ErrorRabbit, string.Format(RabbitResources.ErrorConnectionDescription, _configs.Host, _configs.Port));
             }
         }
 
-        public void PublishMessage(ModelDto model)
+        public void PublishMessage(EventNotification model, CancellationToken cancellationToken)
         {
             try
             {
                 string mensagem = JsonSerializer.Serialize(model);
                 var body = Encoding.UTF8.GetBytes(mensagem);
 
-                IBasicProperties basicProperties;
-                //basicProperties.DeliveryMode = 2;
+                IBasicProperties basicProperties = _channel.CreateBasicProperties();
+                basicProperties.DeliveryMode = 2;
 
-                _channel.BasicPublish(exchange: "NameExchange",
-                    routingKey: "NameQueue",
-                    basicProperties: null,//basicProperties,
+                _channel.BasicPublish(exchange: ConstantsRabbit.NameExchange,
+                    routingKey: ConstantsRabbit.NameQueue,
+                    basicProperties: basicProperties,
                     body: body);
             }
             catch (Exception ex)
             {
-                _logger.LogError(601, "Error To Connect RabbitMq", $"| exception generated: {ex.Message} |");
+                _logger.LogError(601, ConstantsRabbit.ErrorRabbit, string.Format(RabbitResources.ErrorGenerated, ex));
                 throw;
             }
         }
@@ -60,9 +65,14 @@ namespace RabbitMqClient.Api.Services
 
         private void ConfigureWay()
         {
-            _channel.ExchangeDeclare(exchange: "NameExchange", type: ExchangeType.Fanout, durable: true, autoDelete: false);
-            _channel.QueueDeclare(queue: "NameQueue", durable: true, exclusive: false, autoDelete: false);
-            _channel.QueueBind(queue: "NameQueue", exchange: "NameExchange", routingKey: "NameQueue");
+            var arguments = new Dictionary<string, object>
+            {
+                {"x-dead-letter-exchange", ConstantsRabbit.NameExchangeDeadLetter},
+            };
+
+            _channel.ExchangeDeclare(exchange: ConstantsRabbit.NameExchange, type: ExchangeType.Fanout, durable: true, autoDelete: false);
+            _channel.QueueDeclare(queue: ConstantsRabbit.NameQueue, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
+            _channel.QueueBind(queue: ConstantsRabbit.NameQueue, exchange: ConstantsRabbit.NameExchange, routingKey: string.Empty);
         }
 
         #endregion

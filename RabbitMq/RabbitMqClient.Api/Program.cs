@@ -1,18 +1,22 @@
+using MediatR;
 using RabbitMqClient.Api;
 using RabbitMqClient.Api.Domain;
+using RabbitMqClient.Api.Events.Notifications;
 using RabbitMqClient.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
+var services = builder.Services;
 // Add services to the container.
 
-builder.Services.AddControllers();
+services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IRabbitMqClientService, RabbitMqClientService>();
-builder.Services.AddHostedService<RabbitMqSubscribeService>();
+services.AddSingleton<IRabbitMqClientService, RabbitMqClientService>();
+services.Configure<ConnectionRabbit>(builder.Configuration.GetSection("ConnectionRabbit"));
+services.AddMediatR(typeof(EventNotification));
+services.AddHostedService<RabbitMqSubscribeService>();
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using RabbitMqClient.Api.Domain;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using RabbitMqClient.Api.Events.Notifications;
 
 namespace RabbitMqClient.Api.Controllers
 {
@@ -7,17 +8,17 @@ namespace RabbitMqClient.Api.Controllers
     [ApiController]
     public class SendMessageController : ControllerBase
     {
-        private readonly IRabbitMqClientService _rabbitMqService;
+        private readonly IMediator _mediator;
 
-        public SendMessageController(IRabbitMqClientService rabbitMqService)
+        public SendMessageController(IMediator mediator)
         {
-            _rabbitMqService = rabbitMqService;
+            _mediator = mediator;
         }
 
         [HttpPost]
-        public void Send(ModelDto model)
+        public async void Send(EventNotification model)
         {
-            _rabbitMqService.PublishMessage(model);
+            await _mediator.Publish(model);
         }
     }
 }
