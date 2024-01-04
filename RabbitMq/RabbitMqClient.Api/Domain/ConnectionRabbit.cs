@@ -1,4 +1,4 @@
-﻿namespace RabbitMqClient.Api.Domain
+﻿namespace RabbitMqClient.Send.Domain
 {
     public class ConnectionRabbit
     {

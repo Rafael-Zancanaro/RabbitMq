@@ -1,10 +1,10 @@
 ﻿using Newtonsoft.Json;
-using RabbitMqClient.Api.Domain;
-using RabbitMqClient.Api.Events.Notifications;
+using RabbitMqClient.Receive.Domain;
+using RabbitMqClient.Send.Events.Notifications;
 
-namespace RabbitMqClient.Api.Services
+namespace RabbitMqClient.Receive.Services
 {
-    public class EventService : IEventService
+    public class ReceiveService : IReceiveService
     {
         public Task ProcessEventAsync(string message)
         {

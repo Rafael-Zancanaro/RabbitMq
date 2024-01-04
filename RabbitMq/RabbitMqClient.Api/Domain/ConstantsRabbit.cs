@@ -1,9 +1,9 @@
-﻿namespace RabbitMqClient.Api.Domain
+﻿namespace RabbitMqClient.Send.Domain
 {
     public class ConstantsRabbit
     {
-        public const string ErrorRabbit = "Error To Connect RabbitMq";
-        public const string NameExchangeDeadLetter = "NameExchangeDeadLetter";
+        public const string NameExchangeDeadLetter = NameExchange + ".DeadLetters";
+        public const string NameQueueDeadLetter = NameQueue + ".DeadLetters";
         public const string NameExchange = "NameExchange";
         public const string NameQueue = "NameQueue";
     }

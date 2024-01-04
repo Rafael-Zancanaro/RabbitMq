@@ -1,8 +1,8 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using RabbitMqClient.Api.Events.Notifications;
+using RabbitMqClient.Send.Events.Notifications;
 
-namespace RabbitMqClient.Api.Controllers
+namespace RabbitMqClient.Send.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

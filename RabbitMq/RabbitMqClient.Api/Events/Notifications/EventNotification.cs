@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace RabbitMqClient.Api.Events.Notifications
+namespace RabbitMqClient.Send.Events.Notifications
 {
     public class EventNotification : INotification
     {

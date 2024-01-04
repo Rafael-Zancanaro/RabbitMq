@@ -1,22 +1,22 @@
 ﻿using MediatR;
-using RabbitMqClient.Api.Domain;
-using RabbitMqClient.Api.Events.Notifications;
+using RabbitMqClient.Send.Domain;
+using RabbitMqClient.Send.Events.Notifications;
 
-namespace RabbitMqClient.Api.Events.Handlers
+namespace RabbitMqClient.Send.Events.Handlers
 {
     public class CreateEventHandler : INotificationHandler<EventNotification>
     {
-        private readonly IRabbitMqClientService _rabbitMqClientService;
+        private readonly ISendService _sendService;
 
-        public CreateEventHandler(IRabbitMqClientService rabbitMqClientService)
+        public CreateEventHandler(ISendService rabbitMqClientService)
         {
-            _rabbitMqClientService = rabbitMqClientService;
+            _sendService = rabbitMqClientService;
         }
 
         public Task Handle(EventNotification notification, CancellationToken cancellationToken)
         {
             if (notification is not null)
-                _rabbitMqClientService.PublishMessage(notification, cancellationToken);
+                _sendService.PublishMessage(notification, cancellationToken);
 
             return Task.CompletedTask;
         }

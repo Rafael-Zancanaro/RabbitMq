@@ -13,19 +13,4 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="RabbitResources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>RabbitResources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="RabbitResources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>RabbitResources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
 </Project>

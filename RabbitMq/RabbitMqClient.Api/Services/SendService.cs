@@ -1,22 +1,20 @@
 ﻿using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using RabbitMqClient.Api.Domain;
-using RabbitMqClient.Api.Events.Notifications;
+using RabbitMqClient.Send.Domain;
+using RabbitMqClient.Send.Events.Notifications;
 using System.Text;
 using System.Text.Json;
 
-namespace RabbitMqClient.Api.Services
+namespace RabbitMqClient.Send.Services
 {
-    public class RabbitMqClientService : IRabbitMqClientService
+    public class SendService : ISendService
     {
-        private readonly ILogger<RabbitMqClientService> _logger;
         private readonly ConnectionRabbit _configs;
         private readonly IConnection _connection;
         private readonly IModel _channel;
 
-        public RabbitMqClientService(ILogger<RabbitMqClientService> logger, IOptions<ConnectionRabbit> configs)
+        public SendService(IOptions<ConnectionRabbit> configs)
         {
-            _logger = logger;
             _configs = configs.Value;
             try
             {
@@ -33,9 +31,9 @@ namespace RabbitMqClient.Api.Services
                 _channel = _connection.CreateModel();
                 ConfigureWay();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                _logger.LogError(600, ConstantsRabbit.ErrorRabbit, string.Format(RabbitResources.ErrorConnectionDescription, _configs.Host, _configs.Port));
+                throw new Exception(ex.Message);
             }
         }
 
@@ -56,8 +54,7 @@ namespace RabbitMqClient.Api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(601, ConstantsRabbit.ErrorRabbit, string.Format(RabbitResources.ErrorGenerated, ex));
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -72,7 +69,7 @@ namespace RabbitMqClient.Api.Services
 
             _channel.ExchangeDeclare(exchange: ConstantsRabbit.NameExchange, type: ExchangeType.Fanout, durable: true, autoDelete: false);
             _channel.QueueDeclare(queue: ConstantsRabbit.NameQueue, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
-            _channel.QueueBind(queue: ConstantsRabbit.NameQueue, exchange: ConstantsRabbit.NameExchange, routingKey: string.Empty);
+            _channel.QueueBind(queue: ConstantsRabbit.NameQueue, exchange: ConstantsRabbit.NameExchange, routingKey: ConstantsRabbit.NameQueue);
         }
 
         #endregion

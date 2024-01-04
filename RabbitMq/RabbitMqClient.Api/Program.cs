@@ -1,8 +1,7 @@
 using MediatR;
-using RabbitMqClient.Api;
-using RabbitMqClient.Api.Domain;
-using RabbitMqClient.Api.Events.Notifications;
-using RabbitMqClient.Api.Services;
+using RabbitMqClient.Send.Domain;
+using RabbitMqClient.Send.Events.Notifications;
+using RabbitMqClient.Send.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -13,11 +12,9 @@ services.AddControllers();
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
-services.AddScoped<IRabbitMqClientService, RabbitMqClientService>();
-services.AddScoped<IEventService, IEventService>();
+services.AddScoped<ISendService, SendService>();
 services.Configure<ConnectionRabbit>(builder.Configuration.GetSection("ConnectionRabbit"));
 services.AddMediatR(typeof(EventNotification));
-services.AddHostedService<RabbitMqSubscribeService>();
 
 var app = builder.Build();
 
