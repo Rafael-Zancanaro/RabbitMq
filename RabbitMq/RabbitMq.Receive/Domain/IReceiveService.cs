@@ -2,6 +2,6 @@
 {
     public interface IReceiveService
     {
-        Task ProcessEventAsync(string message);
+        Task ProcessEventAsync(string);
     }
 }
